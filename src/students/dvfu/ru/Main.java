@@ -7,6 +7,7 @@ import java.util.Random;
 public class Main {
     private static final int size = 30;
     private static final int N = size * size;
+    private static final double error = 5;
     final static Random random = new Random();
 
     private static int[][] createAndFillArray() {
@@ -92,9 +93,18 @@ public class Main {
     }
 
     private static double calcThermal(double E_average, double E_average_squared, double T) {
-        E_average = E_average/5;
-        E_average_squared = E_average_squared/5;
+        E_average = E_average / 5;
+        E_average_squared = E_average_squared / 5;
         return (E_average_squared - (E_average * E_average)) / (T * T);
+    }
+
+    private static double calcError(double[] xi, double x) {
+        x/=error;
+        double sum = 0;
+        for (int i = 0; i < error; i++) {
+            sum += (xi[i] - x) * (xi[i] - x);
+        }
+        return Math.sqrt(1/(error-1) * sum);
     }
 
     public static void main(String[] args) throws IOException {
@@ -102,7 +112,7 @@ public class Main {
         //printArray(arr);
         System.out.println();
         FileWriter writer = new FileWriter(new File("Results.txt"));
-        writer.append("T\t\tM\t\tE\t\tC");
+        writer.append("T\t\tM\t\tm\t\tE\t\te\t\tC");
 
         FileWriter writer_TE = new FileWriter(new File("TE.txt"));
         writer_TE.append("T\t\t E");
@@ -116,11 +126,13 @@ public class Main {
         for (double T = 0.01; T <= 0.01; T++) {
             double E_average = 0;
             double E_average_squared = 0;
+            double[] E_av = new double[(int)error];
+            double[] M_av = new double[(int)error];
             double E_full = 0;
-            double M;
+            double M_average = 0;
             double C;
-            for (int average = 0; average < 5; average++) {
-                for (int MK = 0; MK < 100000; MK++) {
+            for (int average = 0; average < error; average++) {
+                for (int MK = 0; MK < 1000000; MK++) {
                     int ri = random.nextInt(size), rj = random.nextInt(size);
                     double E1 = calcEnergy(arr, ri, rj);
                     arr[ri][rj] = arr[ri][rj] * -1;
@@ -133,21 +145,28 @@ public class Main {
                 }
                 //printArray(arr);
                 E_full = calcFullEnergy(arr);
+                E_av[average] = E_full;
                 E_average += E_full;
                 E_average_squared += (E_full * E_full);
+                M_av[average] = calcMagnetization(arr);
+                M_average += M_av[average];
             }
-            M = calcMagnetization(arr);
+            double E_error = calcError(E_av, E_average);
+            double M_error = calcError(M_av, M_average);
+            M_average /= error;
             C = calcThermal(E_average, E_average_squared, T);
             writer.append("\n").append(String.format(Locale.ROOT, "%1.2f", T)).append("\t")
-                    .append(String.format(Locale.ROOT, "%1.1f", M))
-                    .append("\t   ").append(String.format(Locale.ROOT, "%1.1f", E_full)).append("\t    ")
+                    .append(String.format(Locale.ROOT, "%1.1f", M_average)).append("\t   ")
+                    .append((String.format(Locale.ROOT, "%1.2f", M_error))).append("\t   ")
+                    .append(String.format(Locale.ROOT, "%1.1f", E_full)).append("\t    ")
+                    .append((String.format(Locale.ROOT, "%2.2f", E_error))).append("\t")
                     .append(String.format(Locale.ROOT, "%1.5f", C));
 
             writer_TE.append("\n").append(String.format(Locale.ROOT, "%1.2f", T)).append("\t")
                     .append(String.format(Locale.ROOT, "%1.1f", E_full)).append("\t\t");
 
             writer_TM.append("\n").append(String.format(Locale.ROOT, "%1.2f", T)).append("\t")
-                    .append(String.format(Locale.ROOT, "%1.1f", M));
+                    .append(String.format(Locale.ROOT, "%1.1f", M_average));
 
             writer_TC.append("\n").append(String.format(Locale.ROOT, "%1.2f", T)).append("\t")
                     .append(String.format(Locale.ROOT, "%1.5f", C));
@@ -157,10 +176,12 @@ public class Main {
         for (double T = 0.1; T <= 4; T += 0.1) {
             double E_average = 0;
             double E_average_squared = 0;
+            double[] E_av = new double[(int)error];
+            double[] M_av = new double[(int)error];
             double E_full = 0;
-            double M;
+            double M_average = 0;
             double C;
-            for (int average = 0; average < 5; average++) {
+            for (int average = 0; average < error; average++) {
                 for (int MK = 0; MK < 1000000; MK++) {
                     int r_i = random.nextInt(size), r_j = random.nextInt(size);
                     double E1 = calcEnergy(arr, r_i, r_j);
@@ -175,24 +196,35 @@ public class Main {
                 }
                 //printArray(arr);
                 E_full = calcFullEnergy(arr);
+                E_av[average] = E_full;
                 E_average += E_full;
                 E_average_squared += (E_full * E_full);
+                M_av[average] = calcMagnetization(arr);
+                M_average += M_av[average];
             }
-            M = calcMagnetization(arr);
+            double E_error = calcError(E_av, E_average);
+            double M_error = calcError(M_av, M_average);
+            M_average /= error;
             C = calcThermal(E_average, E_average_squared, T);
             writer.append("\n").append(String.format(Locale.ROOT, "%1.1f ", T)).append("\t")
-                    .append(String.format(Locale.ROOT, "%1.1f", M))
-                    .append("\t   ").append(String.format(Locale.ROOT, "%1.1f", E_full)).append("\t    ")
-                    .append(String.format(Locale.ROOT, "%1.5f", C)).flush();
+                    .append(String.format(Locale.ROOT, "%1.1f", M_average)).append("\t   ")
+                    .append((String.format(Locale.ROOT, "%1.2f", M_error))).append("\t   ")
+                    .append(String.format(Locale.ROOT, "%1.1f", E_full)).append("\t    ")
+                    .append((String.format(Locale.ROOT, "%2.2f", E_error))).append("\t")
+                    .append(String.format(Locale.ROOT, "%1.5f", C));
 
             writer_TE.append("\n").append(String.format(Locale.ROOT, "%1.2f", T)).append("   \t")
-                    .append(String.format(Locale.ROOT, "%1.1f", E_full)).flush();
+                    .append(String.format(Locale.ROOT, "%1.1f", E_full));
 
             writer_TM.append("\n").append(String.format(Locale.ROOT, "%1.1f ", T)).append("\t")
-                    .append(String.format(Locale.ROOT, "%1.1f", M)).flush();
+                    .append(String.format(Locale.ROOT, "%1.1f", M_average));
 
             writer_TC.append("\n").append(String.format(Locale.ROOT, "%1.2f", T)).append("\t")
-                    .append(String.format(Locale.ROOT, "%1.5f", C)).flush();
+                    .append(String.format(Locale.ROOT, "%1.5f", C));
         }
+        writer.flush();
+        writer_TC.flush();
+        writer_TE.flush();
+        writer_TM.flush();
     }
 }
