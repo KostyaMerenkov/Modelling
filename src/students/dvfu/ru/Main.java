@@ -1,27 +1,35 @@
 package students.dvfu.ru;
 
 import java.io.*;
+import java.text.DecimalFormat;
 import java.util.Locale;
 import java.util.Random;
 
 public class Main {
-    private static final int size = 30;
+    private static final int size = 32;
     private static final int N = size * size;
     private static final double error = 5;
     final static Random random = new Random();
+    //final static DecimalFormat df = new DecimalFormat("#.##");
 
-    private static int[][] createAndFillArray() {
-        int[][] arr = new int[size][size];
-        int[] value = {1, -1};
+    private static double[][] createAndFillArray() {
+        double[][] arr = new double[size][size];
+        //int[] value = {1, -1};
         for (int i = 0; i < arr.length; i++) {
             for (int j = 0; j < arr.length; j++) {
-                arr[i][j] = value[(int) (Math.random() * value.length)];
+                arr[i][j] = nextPi();
             }
         }
         return arr;
     }
 
-    private static void printArray(int[][] arr) {
+    private static double nextPi() {
+        double x = random.nextDouble();
+        return x * (-Math.PI) + (1 - x) * Math.PI;
+        //return Double.parseDouble(String.format(Locale.ROOT, "%1.2f",x * (-Math.PI) + (1 - x) * Math.PI));
+    }
+
+    private static void printArray(double[][] arr) {
         for (int i = 0; i < arr.length; i++) {
             for (int j = 0; j < arr.length; j++) {
                 System.out.print(arr[i][j] + "\t");
@@ -31,8 +39,8 @@ public class Main {
         System.out.println();
     }
 
-    private static int[] getNeighbours(int[][] arr, int x, int y) {
-        int[] neighbour = new int[4]; //up, right, down, left
+    private static double[] getNeighbours(double[][] arr, int x, int y) {
+        double[] neighbour = new double[4]; //up, right, down, left
         if (x == 0) { //up
             neighbour[0] = arr[arr.length - 1][y];
         } else {
@@ -56,14 +64,14 @@ public class Main {
         return neighbour;
     }
 
-    private static void printNeighbours(int element, int[] neighbour) {
+    private static void printNeighbours(double element, double[] neighbour) {
         System.out.println(" \t" + neighbour[0]);
         System.out.println(neighbour[3] + "\t" + element + "\t" + neighbour[1]);
         System.out.println(" \t" + neighbour[2]);
     }
 
-    private static double calcFullEnergy(int[][] arr) {
-        float E_FULL = 0;
+    private static double calcFullEnergy(double[][] arr) {
+        double E_FULL = 0;
         for (int i = 0; i < arr.length; i++) {
             for (int j = 0; j < arr.length; j++) {
                 E_FULL += calcEnergy(arr, i, j);
@@ -72,24 +80,30 @@ public class Main {
         return E_FULL / N;
     }
 
-    private static double calcEnergy(int[][] arr, int x, int y) {
-        int[] neighbour = getNeighbours(arr, x, y);
-        float E = 0;
+    private static double calcEnergy(double[][] arr, int x, int y) {
+        double[] neighbour = getNeighbours(arr, x, y);
+        double E = 0;
         for (int i = 0; i < neighbour.length; i++) {
-            E += (arr[x][y] * neighbour[i]);
+            E += Math.cos(arr[x][y] - neighbour[i]);
         }
         E *= -1;
         return E;
     }
 
-    private static double calcMagnetization(int[][] arr) {
-        float M = 0;
+    private static double calcMagnetization(double[][] arr) {
+        double msin = 0, mcos = 0;
+        double M = 0;
+        double M_old = 0;
         for (int i = 0; i < arr.length; i++) {
             for (int j = 0; j < arr.length; j++) {
-                M += arr[i][j];
+                mcos += Math.cos(arr[i][j]);
+                msin += Math.sin(arr[i][j]);
             }
         }
-        return Math.abs(M / N);
+
+        M = (mcos*mcos + msin*msin) / (N*N);
+        return M;
+        //return M;
     }
 
     private static double calcThermal(double E_average, double E_average_squared, double T) {
@@ -108,21 +122,19 @@ public class Main {
     }
 
     public static void main(String[] args) throws IOException {
-        int[][] arr = createAndFillArray();
-        //printArray(arr);
+        double[][] arr = createAndFillArray();
+        printArray(arr);
         System.out.println();
         FileWriter writer = new FileWriter(new File("Results.txt"));
-        writer.append("T\t\tM\t\tm\t\tE\t\te\t\tC");
-
+        writer.append("T\t\tM\t\t\tm\t\tE\t\te\t\tC");
         FileWriter writer_TE = new FileWriter(new File("TE.txt"));
         writer_TE.append("T\t\t E");
-
         FileWriter writer_TM = new FileWriter(new File("TM.txt"));
         writer_TM.append("T\t\tM");
-
         FileWriter writer_TC = new FileWriter(new File("TC.txt"));
         writer_TM.append("T\t\tC");
 
+        /*
         for (double T = 0.01; T <= 0.01; T++) {
             double E_average = 0;
             double E_average_squared = 0;
@@ -132,18 +144,19 @@ public class Main {
             double M_average = 0;
             double C;
             for (int average = 0; average < error; average++) {
-                for (int MK = 0; MK < 1000000; MK++) {
+                for (int MK = 0; MK < 1000; MK++) {
                     int ri = random.nextInt(size), rj = random.nextInt(size);
                     double E1 = calcEnergy(arr, ri, rj);
-                    arr[ri][rj] = arr[ri][rj] * -1;
+                    double old_value = arr[ri][rj];
+                    arr[ri][rj] = nextPi();
                     double E2 = calcEnergy(arr, ri, rj);
                     if (E2 >= E1) {
-                        if (random.nextDouble() > Math.exp((-1 * (E2 - E1)) / T)) {
-                            arr[ri][rj] = arr[ri][rj] * -1;
+                        if (nextPi() > Math.exp((-1 * (E2 - E1)) / T)) {
+                            arr[ri][rj] = old_value;
                         }
                     }
                 }
-                //printArray(arr);
+                printArray(arr);
                 E_full = calcFullEnergy(arr);
                 E_av[average] = E_full;
                 E_average += E_full;
@@ -171,26 +184,30 @@ public class Main {
             writer_TC.append("\n").append(String.format(Locale.ROOT, "%1.2f", T)).append("\t")
                     .append(String.format(Locale.ROOT, "%1.5f", C));
         }
+*/
 
-
-        for (double T = 0.1; T <= 4; T += 0.1) {
+        for (double T = 0.1, j = 0; T <= 4; T += 0.1, j++) {
+            FileWriter writer_T = new FileWriter(new File("S/S-" + getBinary7(Integer.toBinaryString((int)j)) + ".txt"));
+            massiveToParaview(writer_T, arr);
             double E_average = 0;
             double E_average_squared = 0;
             double[] E_av = new double[(int)error];
             double[] M_av = new double[(int)error];
             double E_full = 0;
             double M_average = 0;
-            double C;
+            double C = 0;
             for (int average = 0; average < error; average++) {
-                for (int MK = 0; MK < 1000000; MK++) {
+                for (int MK = 0; MK < 100000; MK++) {
                     int r_i = random.nextInt(size), r_j = random.nextInt(size);
                     double E1 = calcEnergy(arr, r_i, r_j);
-                    arr[r_i][r_j] = (arr[r_i][r_j]) * -1;
+                    double old_value = arr[r_i][r_j];
+                    arr[r_i][r_j] = nextPi();
                     double E2 = calcEnergy(arr, r_i, r_j);
                     if (E2 >= E1) {
                         double randExp = Math.exp((-1 * (E2 - E1)) / T);
-                        if (random.nextDouble() > randExp) {
-                            arr[r_i][r_j] = (arr[r_i][r_j]) * -1;
+                        double rand = random.nextDouble();
+                        if (rand > randExp) {
+                            arr[r_i][r_j] = old_value;
                         }
                     }
                 }
@@ -206,8 +223,8 @@ public class Main {
             double M_error = calcError(M_av, M_average);
             M_average /= error;
             C = calcThermal(E_average, E_average_squared, T);
-            writer.append("\n").append(String.format(Locale.ROOT, "%1.1f ", T)).append("\t")
-                    .append(String.format(Locale.ROOT, "%1.1f", M_average)).append("\t   ")
+            writer.append("\n").append(String.format(Locale.ROOT, "%1.1f ", T)).append("\t\t")
+                    .append(String.format(Locale.ROOT, "%1.4f", M_average)).append("\t   ")
                     .append((String.format(Locale.ROOT, "%1.2f", M_error))).append("\t   ")
                     .append(String.format(Locale.ROOT, "%1.1f", E_full)).append("\t    ")
                     .append((String.format(Locale.ROOT, "%2.2f", E_error))).append("\t")
@@ -222,9 +239,45 @@ public class Main {
             writer_TC.append("\n").append(String.format(Locale.ROOT, "%1.2f", T)).append("\t")
                     .append(String.format(Locale.ROOT, "%1.5f", C));
         }
+        printArray(arr);
+        writerFlushAndClose(writer, writer_TC, writer_TE, writer_TM);
+
+
+    }
+
+    private static void massiveToParaview(FileWriter writer_t, double[][] arr) throws IOException {
+        //writer_t.append("x\ty\tz\tX\tY\tZ\n");
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = 0; j < arr.length; j++) {
+                writer_t.append(String.valueOf(i)).append("\t").append(String.valueOf(j)).append("\t")
+                        .append("0").append("\t")
+                        .append(String.format(Locale.ROOT, "%1.2f", Math.cos(arr[i][j]))).append("\t")
+                        .append(String.format(Locale.ROOT, "%1.2f", Math.sin(arr[i][j]))).append("\t")
+                        .append("0\n");
+            }
+        }
+        writer_t.flush();
+        writer_t.close();
+    }
+
+    private static String getBinary7(String toBinaryString) {
+        StringBuilder toBinaryStringBuilder = new StringBuilder(toBinaryString);
+        while (toBinaryStringBuilder.length() < 7)
+        {
+            toBinaryStringBuilder.insert(0, "0");
+        }
+        toBinaryString = toBinaryStringBuilder.toString();
+        return toBinaryString;
+    }
+
+    private static void writerFlushAndClose(FileWriter writer, FileWriter writer_tc, FileWriter writer_te, FileWriter writer_tm) throws IOException {
         writer.flush();
-        writer_TC.flush();
-        writer_TE.flush();
-        writer_TM.flush();
+        writer_tc.flush();
+        writer_te.flush();
+        writer_tm.flush();
+        writer.close();
+        writer_tc.close();
+        writer_te.close();
+        writer_tm.close();
     }
 }
