@@ -6,7 +6,7 @@ import java.util.Locale;
 import java.util.Random;
 
 public class Main {
-    private static final int size = 10;
+    private static final int size = 30;
     private static final int N = size * size;
     private static final double error = 5;
     final static Random random = new Random();
@@ -16,28 +16,52 @@ public class Main {
     private static double[][] Sy;
     private static double[][] Sz;
 
-
     private static void createAndFillArray() {
         Sx = new double[size][size];
         Sy = new double[size][size];
         Sz = new double[size][size];
-
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                double psi = - Math.acos(2 * random.nextDouble() - 1);
-                double fi = Math.PI*2* random.nextDouble();
-                Sx[i][j] = Math.sin(fi)*Math.cos(psi);
-                Sy[i][j] = Math.sin(fi)*Math.sin(psi);
-                Sz[i][j] = Math.cos(fi);
+        try (FileWriter fw = new FileWriter("Arr.txt")) {
+            for (int i = 0; i < size; i++) {
+                for (int j = 0; j < size; j++) {
+                    double psi = -Math.acos(2 * random.nextDouble() - 1);
+                    double fi = Math.PI * 2 * random.nextDouble();
+                    Sx[i][j] = Math.sin(fi) * Math.cos(psi);
+                    Sy[i][j] = Math.sin(fi) * Math.sin(psi);
+                    Sz[i][j] = Math.cos(fi);
+                    fw.write(Sx[i][j] + "\t" + Sy[i][j] + "\t" + Sz[i][j] + "\n");
+                }
             }
+        } catch (IOException ex) {
+            System.out.println(ex.getMessage());
+        }
+
+    }
+
+    private static void createWrongArray() {
+        double[][] sx_wrong = new double[size][size];
+        double[][] sy_wrong = new double[size][size];
+        double[][] sz_wrong = new double[size][size];
+        try (FileWriter fw = new FileWriter("wrongArr.txt")) {
+            for (int i = 0; i < size; i++) {
+                for (int j = 0; j < size; j++) {
+                    double psi = Math.PI * random.nextDouble();
+                    double fi = Math.PI * 2 * random.nextDouble();
+                    sx_wrong[i][j] = Math.sin(fi) * Math.cos(psi);
+                    sy_wrong[i][j] = Math.sin(fi) * Math.sin(psi);
+                    sz_wrong[i][j] = Math.cos(fi);
+                    fw.write(sx_wrong[i][j] + "\t" + sy_wrong[i][j] + "\t" + sz_wrong[i][j] + "\n");
+                }
+            }
+        } catch (IOException ex) {
+            System.out.println(ex.getMessage());
         }
     }
 
-//    private static double nextPi() {
-//        double x = random.nextDouble();
-//        return x * (-Math.PI) + (1 - x) * Math.PI;
-//        //return Double.parseDouble(String.format(Locale.ROOT, "%1.2f",x * (-Math.PI) + (1 - x) * Math.PI));
-//    }
+    private static double nextPi() {
+        double x = random.nextDouble();
+        return x * (-Math.PI) + (1 - x) * Math.PI;
+        //return Double.parseDouble(String.format(Locale.ROOT, "%1.2f",x * (-Math.PI) + (1 - x) * Math.PI));
+    }
 
     private static void printArray(double[][] arr) {
         for (int i = 0; i < size; i++) {
@@ -96,7 +120,7 @@ public class Main {
         double[] neighbourZ = getNeighbours(Sz, x, y);
         double E = 0;
         for (int i = 0; i < 4; i++) {
-            E += (Sx[x][y]*neighbourX[i]+Sy[x][y]*neighbourY[i]+Sy[x][y]*neighbourZ[i]);
+            E += (Sx[x][y] * neighbourX[i] + Sy[x][y] * neighbourY[i] + Sy[x][y] * neighbourZ[i]);
         }
         E *= -1;
         return E;
@@ -112,7 +136,7 @@ public class Main {
                 Mz += Sz[i][j];
             }
         }
-        M = (Mx*Mx + My*My + Mz*Mz) / (N);
+        M = Math.sqrt(Mx * Mx + My * My + Mz * Mz) / (N);
         return M;
     }
 
@@ -123,20 +147,21 @@ public class Main {
     }
 
     private static double calcError(double[] xi, double x) {
-        x/=error;
+        x /= error;
         double sum = 0;
         for (int i = 0; i < error; i++) {
             sum += (xi[i] - x) * (xi[i] - x);
         }
-        return Math.sqrt(1/(error-1) * sum);
+        return Math.sqrt(1 / (error - 1) * sum);
     }
 
     public static void main(String[] args) throws IOException {
         createAndFillArray();
+        //createWrongArray();
         //printArray(arr);
         System.out.println();
         FileWriter writer = new FileWriter(new File("Results.txt"));
-        writer.append("T\t\t M\t\t\tm\t\t\tE\t\t\te\t\t\tC");
+        writer.append("T\t\tM\t\t\tm\t\t E\t\te\t\tC");
         FileWriter writer_TE = new FileWriter(new File("TE.txt"));
         writer_TE.append("T\t\t E");
         FileWriter writer_TM = new FileWriter(new File("TM.txt"));
@@ -145,12 +170,12 @@ public class Main {
         writer_TC.append("T\t\tC");
 
         for (double T = 0.1, j = 0; T <= 4; T += 0.1, j++) {
-            FileWriter writer_T = new FileWriter(new File("S/S-" + getBinary7(Integer.toBinaryString((int)j)) + ".txt"));
+            FileWriter writer_T = new FileWriter(new File("S/S-" + getBinary7(Integer.toBinaryString((int) j)) + ".txt"));
             massiveToParaview(writer_T);
             double E_average = 0;
             double E_average_squared = 0;
-            double[] E_av = new double[(int)error];
-            double[] M_av = new double[(int)error];
+            double[] E_av = new double[(int) error];
+            double[] M_av = new double[(int) error];
             double E_full = 0;
             double M_average = 0;
             double C = 0;
@@ -161,10 +186,10 @@ public class Main {
                     double old_x = Sx[r_i][r_j];
                     double old_y = Sy[r_i][r_j];
                     double old_z = Sz[r_i][r_j];
-                    double psi = - Math.acos(2 * random.nextDouble() - 1);
-                    double fi = Math.PI*2 * random.nextDouble();
-                    Sx[r_i][r_j] = Math.sin(fi)*Math.cos(psi);
-                    Sy[r_i][r_j] = Math.sin(fi)*Math.sin(psi);
+                    double psi = -Math.acos(2 * random.nextDouble() - 1);
+                    double fi = Math.PI * 2 * random.nextDouble();
+                    Sx[r_i][r_j] = Math.sin(fi) * Math.cos(psi);
+                    Sy[r_i][r_j] = Math.sin(fi) * Math.sin(psi);
                     Sz[r_i][r_j] = Math.cos(fi);
                     double E2 = calcEnergy(r_i, r_j);
                     if (E2 >= E1) {
@@ -191,7 +216,7 @@ public class Main {
             C = calcThermal(E_average, E_average_squared, T);
             writer.append("\n").append(String.format(Locale.ROOT, "%1.1f ", T)).append("\t")
                     .append(String.format(Locale.ROOT, "%1.4f", M_average)).append("\t\t")
-                    .append((String.format(Locale.ROOT, "%1.2f", M_error))).append("\t   ")
+                    .append((String.format(Locale.ROOT, "%1.2f", M_error))).append("   ")
                     .append(String.format(Locale.ROOT, "%1.1f", E_full)).append("\t    ")
                     .append((String.format(Locale.ROOT, "%2.2f", E_error))).append("\t")
                     .append(String.format(Locale.ROOT, "%1.5f", C));
@@ -200,26 +225,24 @@ public class Main {
                     .append(String.format(Locale.ROOT, "%1.1f", E_full));
 
             writer_TM.append("\n").append(String.format(Locale.ROOT, "%1.1f ", T)).append("\t")
-                    .append(String.format(Locale.ROOT, "%1.1f", M_average));
+                    .append(String.format(Locale.ROOT, "%1.4f", M_average));
 
             writer_TC.append("\n").append(String.format(Locale.ROOT, "%1.2f", T)).append("\t")
                     .append(String.format(Locale.ROOT, "%1.5f", C));
         }
         //printArray(arr);
         writerFlushAndClose(writer, writer_TC, writer_TE, writer_TM);
-
-
     }
 
     private static void massiveToParaview(FileWriter writer_t) throws IOException {
-        //writer_t.append("x \t y \t z \t X \t Y \t Z \n");
+        writer_t.append("x \t y \t z \t Sx \t Sy \t Sz \n");
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                 writer_t.append(String.valueOf(i)).append("\t").append(String.valueOf(j)).append("\t")
                         .append("1").append("\t")
                         .append(String.format(Locale.ROOT, "%1.2f", Sx[i][j])).append("\t")
                         .append(String.format(Locale.ROOT, "%1.2f", Sy[i][j])).append("\t")
-                        .append(String.format(Locale.ROOT, "%1.2f", Sz[i][j]));
+                        .append(String.format(Locale.ROOT, "%1.2f", Sz[i][j])).append("\n");
             }
         }
         writer_t.flush();
@@ -228,8 +251,7 @@ public class Main {
 
     private static String getBinary7(String toBinaryString) {
         StringBuilder toBinaryStringBuilder = new StringBuilder(toBinaryString);
-        while (toBinaryStringBuilder.length() < 7)
-        {
+        while (toBinaryStringBuilder.length() < 7) {
             toBinaryStringBuilder.insert(0, "0");
         }
         toBinaryString = toBinaryStringBuilder.toString();
